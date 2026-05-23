@@ -89,13 +89,9 @@ curl -X POST http://<API_GW_PUBLIC_IP>:3111/v1/chat/completions \
 **Sample Response:**
 ```json
 {
-  "status_code": 200,
-  "body": {
-    "result": "Quantum entanglement is a phenomenon where two particles become connected so that the state of one is instantly linked to the state of the other, no matter the distance.",
+  "result": {
+    "result": "Quantum entanglement is a phenomenon where two or more particles become connected in such a way that their properties are correlated...",
     "success": "You've connected two workers and they're interoperating seamlessly, now let's add a few more workers to expand this project's functionality."
-  },
-  "headers": {
-    "Content-Type": "application/json"
   }
 }
 ```
