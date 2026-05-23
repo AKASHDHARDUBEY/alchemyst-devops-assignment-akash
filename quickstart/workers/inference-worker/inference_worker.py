@@ -17,9 +17,16 @@ logger = Logger()
 model_id = "ggml-org/gemma-3-270m-GGUF" # "Qwen/Qwen3-0.6B-GGUF"
 gguf_file = "gemma-3-270m-Q8_0.gguf" # "Qwen3-0.6B-Q8_0.gguf"  # Q8 quantized variant
 
+import torch
+
 # 2. Load tokenizer and model from the GGUF file
 tokenizer = AutoTokenizer.from_pretrained(model_id, gguf_file=gguf_file)
-model = AutoModelForCausalLM.from_pretrained(model_id, gguf_file=gguf_file)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    gguf_file=gguf_file,
+    torch_dtype=torch.bfloat16,
+    low_cpu_mem_usage=True
+)
 
 tokenizer.chat_template = ("""{{ bos_token }}
 {%- if messages[0]['role'] == 'system' -%}
