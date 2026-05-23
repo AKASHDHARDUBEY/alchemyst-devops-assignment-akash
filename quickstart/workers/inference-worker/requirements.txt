@@ -4,3 +4,4 @@ transformers
 
 gguf
 accelerate
+torch
