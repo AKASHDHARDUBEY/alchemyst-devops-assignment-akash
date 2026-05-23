@@ -77,7 +77,7 @@ tokenizer.chat_template = ("""{{ bos_token }}
 {%- endif -%}""")
 
 # 3. Run inference
-def run_inference_handler(payload: Dict[str, str | List[Dict[str, Any]]]) -> Dict[str, Any]:
+def run_inference_handler(payload: Dict[str, str | List[Dict[str, Any]]]) -> str:
     # prompt = "Explain quantum entanglement in simple terms."
     messages = payload.get("messages", [])
 
