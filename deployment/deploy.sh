@@ -8,24 +8,22 @@ KEY_PATH=$1
 API_GW_IP=$2
 TS_WORKER_IP=$3
 PYTHON_WORKER_IP=$4
+API_GW_PRIVATE_IP=$5
 
-if [ -z "$4" ]; then
-  echo "Usage: ./deploy.sh <path_to_ssh_key> <api_gateway_ip> <ts_worker_ip> <python_worker_ip>"
+if [ -z "$5" ]; then
+  echo "Usage: ./deploy.sh <path_to_ssh_key> <api_gateway_ip> <ts_worker_ip> <python_worker_ip> <api_gateway_private_ip>"
   exit 1
 fi
-
-SSH_OPTIONS="-o StrictHostKeyChecking=no -i $KEY_PATH"
-JUMP_OPTIONS="-o ProxyJump=ubuntu@$API_GW_IP"
 
 echo "=============================================="
 echo " Deploying API Gateway & Engine "
 echo "=============================================="
 
 # Copy engine config
-scp $SSH_OPTIONS deployment/engine-config.yaml ubuntu@$API_GW_IP:~/config.yaml
+scp deployment/engine-config.yaml ubuntu@$API_GW_IP:~/config.yaml
 
 # Setup API Gateway
-ssh $SSH_OPTIONS ubuntu@$API_GW_IP << 'EOF'
+ssh ubuntu@$API_GW_IP << 'EOF'
   curl -fsSL https://install.iii.dev/iii/main/install.sh | sh
   sudo mv ~/.local/bin/iii /usr/local/bin/
   
@@ -48,18 +46,24 @@ UNIT
   sudo systemctl enable --now iii-engine
 EOF
 
-# Get API Gateway Private IP from metadata (assuming AWS)
-API_GW_PRIVATE_IP=$(ssh $SSH_OPTIONS ubuntu@$API_GW_IP "curl -s http://169.254.169.254/latest/meta-data/local-ipv4")
-
 echo "API Gateway Private IP is $API_GW_PRIVATE_IP"
 
 echo "=============================================="
 echo " Deploying Caller Worker (TypeScript) "
 echo "=============================================="
 
-scp $SSH_OPTIONS $JUMP_OPTIONS -r ../quickstart ubuntu@$TS_WORKER_IP:~/quickstart
+scp -r quickstart ubuntu@$TS_WORKER_IP:~/quickstart
 
-ssh $SSH_OPTIONS $JUMP_OPTIONS ubuntu@$TS_WORKER_IP << EOF
+ssh ubuntu@$TS_WORKER_IP << EOF
+  # Setup Swap
+  if [ ! -f /swapfile ]; then
+    sudo fallocate -l 2G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+  fi
+
   curl -fsSL https://install.iii.dev/iii/main/install.sh | sh
   sudo mv ~/.local/bin/iii /usr/local/bin/
   
@@ -93,17 +97,27 @@ echo "=============================================="
 echo " Deploying Inference Worker (Python) "
 echo "=============================================="
 
-scp $SSH_OPTIONS $JUMP_OPTIONS -r ../quickstart ubuntu@$PYTHON_WORKER_IP:~/quickstart
+scp -r quickstart ubuntu@$PYTHON_WORKER_IP:~/quickstart
 
-ssh $SSH_OPTIONS $JUMP_OPTIONS ubuntu@$PYTHON_WORKER_IP << EOF
+ssh ubuntu@$PYTHON_WORKER_IP << EOF
+  # Setup Swap
+  if [ ! -f /swapfile ]; then
+    sudo fallocate -l 2G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+  fi
+
   sudo apt-get update
   sudo apt-get install -y python3 python3-pip python3-venv
 
   cd ~/quickstart/workers/inference-worker
+  rm -rf venv
   python3 -m venv venv
   source venv/bin/activate
+  pip install torch --index-url https://download.pytorch.org/whl/cpu
   pip install -r requirements.txt
-  pip install transformers accelerate gguf torch
   
   cat << 'UNIT' | sudo tee /etc/systemd/system/iii-inference.service
 [Unit]
