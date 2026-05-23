@@ -66,7 +66,7 @@ Use the provided bash script to copy the code to the VMs and setup `systemd` ser
 To run the deployment script, execute from the root directory:
 
 ```bash
-./deployment/deploy.sh ~/.ssh/devops-assignment-key.pem <API_GW_PUBLIC_IP> <TS_WORKER_PRIVATE_IP> <PYTHON_WORKER_PRIVATE_IP>
+./deployment/deploy.sh ~/.ssh/devops-assignment-key.pem <API_GW_PUBLIC_IP> <TS_WORKER_PRIVATE_IP> <PYTHON_WORKER_PRIVATE_IP> <API_GW_PRIVATE_IP>
 ```
 
 ### 4. Test the API
